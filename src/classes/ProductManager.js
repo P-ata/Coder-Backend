@@ -1,4 +1,5 @@
 const fs = require("fs");
+const path=require("path")
 
 class ProductManager {
   constructor(filePath) {
@@ -31,6 +32,12 @@ class ProductManager {
   }
 
   addProduct({ title, description, price, thumbnail, code, stock }) {
+    
+    // Validación de los campos requeridos (corregido)
+    if (!title || !description || !price || !thumbnail || !code || !stock) {
+      throw new Error('Todos los campos son requeridos');
+    }
+    
     if (this.products.some(product => product.code === code)) {
       throw new Error("El código de producto ya existe");
     }
@@ -89,46 +96,48 @@ class ProductManager {
   }
 }
 
+module.exports=ProductManager
+
 // Ejemplo de uso
-const productManager = new ProductManager("productos.json");
-
-console.log("Productos al inicio:", productManager.getProducts());
-
-const addedProduct = productManager.addProduct({
-  title: "producto prueba",
-  description: "Este es un producto prueba",
-  price: 200,
-  thumbnail: "Sin imagen",
-  code: "abc123",
-  stock: 25,
-});
-
-console.log("Productos después de agregar:", productManager.getProducts());
-
-try {
-  productManager.addProduct({
-    title: "producto prueba",
-    description: "Este es un producto prueba",
-    price: 200,
-    thumbnail: "Sin imagen",
-    code: "abc123",
-    stock: 25,
-  });
-} catch (error) {
-  console.error("Error al agregar producto duplicado:", error.message);
-}
-
-const getProductById = productManager.getProductById(addedProduct.id);
-console.log("Producto obtenido por id:", getProductById);
-
+//const productManager = new ProductManager("productos.json");
+//
+//console.log("Productos al inicio:", productManager.getProducts());
+//
+//const addedProduct = productManager.addProduct({
+//  title: "producto prueba",
+//  description: "Este es un producto prueba",
+//  price: 200,
+// thumbnail: "Sin imagen",
+//  code: "abc123",
+//  stock: 25,
+//});
+//
+//console.log("Productos después de agregar:", productManager.//////getProducts());
+//
+//try {
+//  productManager.addProduct({
+//    title: "producto prueba",
+//    description: "Este es un producto prueba",
+//    price: 200,
+//    thumbnail: "Sin imagen",
+//    code: "abc123",
+//    stock: 25,
+//  });
+//} catch (error) {
+//  console.error("Error al agregar producto duplicado:", error.message);
+//}
+//
+//const getProductById = productManager.getProductById(addedProduct.id);
+//console.log("Producto obtenido por id:", getProductById);
+//
 // Actualizar un producto
-const updatedProduct = productManager.updateProduct(addedProduct.id, {
-  price: 250,
-  stock: 30,
-});
-
-console.log("Producto actualizado:", updatedProduct);
-
+//const updatedProduct = productManager.updateProduct(addedProduct.id, {
+//  price: 250,
+//  stock: 30,
+//});
+//
+//console.log("Producto actualizado:", updatedProduct);
+//
 // Eliminar un producto
-const deletedProduct = productManager.deleteProduct(addedProduct.id);
-console.log("Producto eliminado:", deletedProduct);
+//const deletedProduct = productManager.deleteProduct(addedProduct.id);
+//console.log("Producto eliminado:", deletedProduct);
