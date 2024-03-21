@@ -8,17 +8,6 @@ const productManagerInstance = new ProductManager("./src/data/products.json");
 
 app.get("/products", async (req, res) => {
     try {
-        let productos = await productManagerInstance.getProducts();
-        res.json(productos);
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-
-
-});
-
-app.get("/products", async (req, res) => {
-    try {
         let limit = req.query.limit; 
         let productos = await productManagerInstance.getProducts();
 
