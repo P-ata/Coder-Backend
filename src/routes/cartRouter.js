@@ -1,11 +1,10 @@
 import { Router } from 'express';
-import path from 'path';
-import CartManager from '../classes/CartManager';
+import CartManager from '../dao/CartManager';
+const { io } = require('../app');
 
 const router = Router();
 
-const cartFilePath = path.join(__dirname, '..', 'data', 'cart.json');
-const cartManagerInstance = new CartManager(cartFilePath);
+const cartManagerInstance = new CartManager();
 
 router.post("/", async (req, res) => {
     try {
@@ -38,12 +37,8 @@ router.post("/:cid/product/:pid", async (req, res) => {
         const { cid, pid } = req.params;
         const { quantity } = req.body;
 
-        if (!Number.isInteger(parseInt(cid)) || !Number.isInteger(parseInt(pid))) {
-            throw new Error("Los ID del carrito y del producto deben ser números enteros positivos");
-        }
-
-        if (!Number.isInteger(quantity) || quantity <= 0) {
-            throw new Error("La cantidad debe ser un número entero positivo");
+        if (!mongoose.Types.ObjectId.isValid(cid) || !mongoose.Types.ObjectId.isValid(pid)) {
+            throw new Error("Los ID del carrito y del producto deben ser válidos");
         }
 
         // Obtener el carrito con el ID proporcionado
