@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import CartManager from '../dao/CartManager';
-const { io } = require('../app');
+import { io } from '../app';
 
 const router = Router();
 
@@ -9,7 +9,7 @@ const cartManagerInstance = new CartManager();
 router.post("/", async (req, res) => {
     try {
         // Crear un nuevo carrito
-        const newCart = cartManagerInstance.createCart();
+        const newCart = await cartManagerInstance.createCart();
 
         console.log(`Se creó el carrito con ID: ${newCart.id}`);
 
@@ -37,6 +37,7 @@ router.post("/:cid/product/:pid", async (req, res) => {
         const { cid, pid } = req.params;
         const { quantity } = req.body;
 
+        // Validar que los ID del carrito y del producto sean válidos
         if (!mongoose.Types.ObjectId.isValid(cid) || !mongoose.Types.ObjectId.isValid(pid)) {
             throw new Error("Los ID del carrito y del producto deben ser válidos");
         }
@@ -49,8 +50,13 @@ router.post("/:cid/product/:pid", async (req, res) => {
             throw new Error("Carrito no encontrado");
         }
 
+        // Validar la cantidad del producto
+        if (!Number.isInteger(quantity) || quantity <= 0) {
+            throw new Error("La cantidad del producto debe ser un número entero positivo");
+        }
+
         // Agregar el producto al carrito con la cantidad especificada
-        cartManagerInstance.addProductToCart(cartId, productId, quantity);
+        await cartManagerInstance.addProductToCart(cartId, productId, quantity);
 
         res.status(200).json(cart); // Devolver el carrito actualizado
     } catch (error) {

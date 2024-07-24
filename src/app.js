@@ -1,12 +1,12 @@
-const express = require("express");
-const http = require("http");
-const { Server } = require("socket.io");
+import express from "express";
+import http from "http";
+import { Server } from "socket.io";
 import { engine } from "express-handlebars";
 import mongoose from "mongoose";
+import productRouter from "./routes/productRouter";
+import cartRouter from "./routes/cartRouter";
 
-const productRouter = require("./routes/productRouter")
-const cartRouter = require("./routes/cartRouter")
-const realTimeProductsRouter = require('./routes/realTimeProductsRouter');
+
 
 const PORT = 3000;
 
@@ -25,7 +25,6 @@ app.set("views", "./views")
 
 app.use("/api/products", productRouter)
 app.use("/api/carts", cartRouter)
-app.use("/api/realTimeProducts", realTimeProductsRouter)
 
 app.get('/',(req,res)=>{
     res.setHeader('Content-Type','text/plain');
@@ -104,7 +103,6 @@ const connDB=async()=>{
 }
 
 connDB()
-
 
 module.exports = { io };
 

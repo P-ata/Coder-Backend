@@ -1,8 +1,8 @@
 import { Router } from 'express';
-export const router=Router()
-const { io } = require('../app');
-
-const ProductManager = require("../dao/ProductManager");
+import { io } from '../app';
+import ProductsModel from "./models/ProductsModel";
+import ProductManager from "../dao/ProductManager";
+export const router = Router();
 
 
 const productManagerInstance = new ProductManager();
@@ -28,29 +28,53 @@ router.get("/", async (req, res) => {
 });
 
 router.get("/:pid", async (req, res) => {
+    // Verificar si se proporcionó el parámetro de la ruta ":pid"
+    if (!req.params.pid || isNaN(req.params.pid)) {
+        return res.status(400).json({ error: "ID de producto inválido" });
+    }
+
+    const productId = parseInt(req.params.pid); 
+
     try {
-        // Verificar si se proporcionó el parámetro de la ruta ":pid"
-        if (!req.params.pid || isNaN(req.params.pid)) {
-            throw new Error("ID de producto inválido");
-        }
-
-        const productId = parseInt(req.params.pid); 
-
-        const products = await productManagerInstance.getProductById(productId);
+        const product = await productManagerInstance.getProductById(productId);
 
         socket.emit("productById", productId);
         
-        res.json(products);
+        res.json(product);
     } catch (error) {
-        res.status(404).json({ error: error.message });
+        res.status(404).json({ error: "Producto no encontrado" });
     }
 });
 
 router.post("/", async (req, res) => {
     try {
-        const newProduct = await productManagerInstance.addProduct(req.body);
+        const { title, description, price, thumbnail, code, stock } = req.body;
 
-        console.log(`Producto creado exitosamente: ${newProduct}`);
+        // Validar que todos los campos estén presentes
+        if (!title || !description || !price || !thumbnail || !code || !stock) {
+            throw new Error('Todos los campos son requeridos');
+        }
+
+        // Validar que el código del producto no exista previamente
+        const existingProduct = await ProductsModel.findOne({ code });
+        if (existingProduct) {
+            throw new Error('El código de producto ya existe');
+        }
+
+        // Crear un nuevo producto utilizando el modelo ProductsModel
+        const newProduct = new ProductsModel({
+            title,
+            description,
+            price,
+            thumbnail,
+            code,
+            stock,
+        });
+
+        // Guardar el nuevo producto en la base de datos
+        await productManagerInstance.addProduct(newProduct);
+
+        console.log(`Producto agregado correctamente: ${newProduct}`);
 
         io.emit("productAdded", newProduct);
 
@@ -60,23 +84,23 @@ router.post("/", async (req, res) => {
     }
 });
 
-
 router.put("/:pid", async (req, res) => {
     try {
         const productId = parseInt(req.params.pid); 
-
-        const updatedFields = req.body; // Obtener los campos actualizados del cuerpo de la solicitud
+        const updatedFields = req.body;
 
         // Verificar si se proporcionaron campos actualizados
         if (!Object.keys(updatedFields).length) {
             throw new Error("No se proporcionaron campos para actualizar");
         }
 
-        const products = await productManagerInstance.getProductById(productId); // Verificar si el producto existe
-        if (!products) {
+        // Obtener el producto
+        const product = await productManagerInstance.getProductById(productId);
+        if (!product) {
             throw new Error("Producto no encontrado");
         }
 
+        // Actualizar el producto
         const updatedProduct = await productManagerInstance.updateProduct(productId, updatedFields);
         
         console.log(`Producto actualizado correctamente: ${updatedProduct}`);
@@ -89,17 +113,20 @@ router.put("/:pid", async (req, res) => {
     }
 });
 
-
 router.delete("/:pid", async (req, res) => {
     try {
         const productId = parseInt(req.params.pid); 
 
-        const products = await productManagerInstance.getProductById(productId); // Verificar si el producto existe
+        const products = await productManagerInstance.getProductById(productId); 
         if (!products) {
             throw new Error("Producto no encontrado");
         }
 
         const deletedProduct = await productManagerInstance.deleteProduct(productId);
+
+        if (!deletedProduct) {
+            throw new Error("Error al eliminar el producto");
+        }
 
         console.log(`Producto eliminado correctamente: ${deletedProduct}`);
 
@@ -110,4 +137,5 @@ router.delete("/:pid", async (req, res) => {
         res.status(400).json({ error: error.message });
     }
 });
+
 
