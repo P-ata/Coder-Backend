@@ -38,7 +38,10 @@ class CartManager {
         const product = cart.products.find(product => product.productId.equals(productId));
         return product;
     }
-    
+
+    async getAllCarts() {
+        return await CartModel.find();
+    }
 }
 
 module.exports = CartManager;

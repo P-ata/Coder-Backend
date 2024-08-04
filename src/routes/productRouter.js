@@ -8,14 +8,9 @@ const productManagerInstance = new ProductManager();
 
 router.get("/", async (req, res) => {
     try {
-        let limit = req.query.limit; 
         let products = await productManagerInstance.getProducts();
-
-        if (limit && !isNaN(limit) && parseInt(limit) > 0) {
-            products = products.slice(0, parseInt(limit));
-        }
-
-        res.render("realTimeProducts", { products });
+        console.log("Productos obtenidos:", products);
+        res.render("realTimeProducts", { products }); 
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
@@ -59,7 +54,7 @@ router.post("/", async (req, res) => {
         });
 
         const addedProduct = await productManagerInstance.addProduct(newProduct);
-        getIO().emit("productAdded", addedProduct); // Usa getIO en lugar de io
+        getIO().emit("productAdded", addedProduct); // Emitir evento
         res.status(201).json(addedProduct);
     } catch (error) {
         res.status(400).json({ error: error.message });
@@ -81,7 +76,7 @@ router.put("/:pid", async (req, res) => {
         }
 
         const updatedProduct = await productManagerInstance.updateProduct(productId, updatedFields);
-        getIO().emit("productUpdated", updatedProduct); // Usa getIO en lugar de io
+        getIO().emit("productUpdated", updatedProduct); // Emitir evento
         res.json(updatedProduct);
     } catch (error) {
         res.status(400).json({ error: error.message });
@@ -98,7 +93,7 @@ router.delete("/:pid", async (req, res) => {
         }
 
         const deletedProduct = await productManagerInstance.deleteProduct(productId);
-        getIO().emit("productDeleted", deletedProduct); // Usa getIO en lugar de io
+        getIO().emit("productDeleted", deletedProduct); // Emitir evento
         res.json(deletedProduct);
     } catch (error) {
         res.status(400).json({ error: error.message });
