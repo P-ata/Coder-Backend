@@ -1,18 +1,15 @@
-import { Router } from 'express';
-import CartManager from '../dao/CartManager';
-import { io } from '../app';
+const { Router } = require('express');
+const mongoose = require('mongoose');
+const CartManager = require('../dao/CartManager');
 
 const router = Router();
-
 const cartManagerInstance = new CartManager();
 
 router.post("/", async (req, res) => {
     try {
         // Crear un nuevo carrito
         const newCart = await cartManagerInstance.createCart();
-
-        console.log(`Se creó el carrito con ID: ${newCart.id}`);
-
+        console.log(`Se creó el carrito con ID: ${newCart._id}`);
         res.status(201).json(newCart); // Devolver el nuevo carrito creado
     } catch (error) {
         res.status(400).json({ error: error.message });
@@ -24,8 +21,7 @@ router.get("/:cid", async (req, res) => {
         const cartId = req.params.cid;
 
         // Obtener los productos del carrito
-        const products = cartManagerInstance.getProductsInCart(cartId);
-
+        const products = await cartManagerInstance.getProductsInCart(cartId);
         res.json(products);
     } catch (error) {
         res.status(400).json({ error: error.message });
@@ -43,9 +39,7 @@ router.post("/:cid/product/:pid", async (req, res) => {
         }
 
         // Obtener el carrito con el ID proporcionado
-        const cartId = parseInt(cid);
-        const productId = parseInt(pid);
-        const cart = await cartManagerInstance.getCartById(cartId);
+        const cart = await cartManagerInstance.getCartById(cid);
         if (!cart) {
             throw new Error("Carrito no encontrado");
         }
@@ -56,7 +50,7 @@ router.post("/:cid/product/:pid", async (req, res) => {
         }
 
         // Agregar el producto al carrito con la cantidad especificada
-        await cartManagerInstance.addProductToCart(cartId, productId, quantity);
+        await cartManagerInstance.addProductToCart(cid, pid, quantity);
 
         res.status(200).json(cart); // Devolver el carrito actualizado
     } catch (error) {
@@ -64,6 +58,4 @@ router.post("/:cid/product/:pid", async (req, res) => {
     }
 });
 
-export default router;
-
-
+module.exports = router;

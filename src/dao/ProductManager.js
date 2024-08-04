@@ -1,5 +1,5 @@
-import mongoose from "mongoose";
-import ProductsModel from "./models/ProductsModel";
+const mongoose = require('mongoose');
+const ProductsModel = require('./models/ProductsModel');
 
 class ProductManager {
 
@@ -8,7 +8,7 @@ class ProductManager {
   }
 
   async addProduct(newProduct) {
-    return await newProduct.save();
+    return await ProductsModel.create(newProduct);
   } 
   
   async getProductById(id) {
@@ -25,5 +25,4 @@ class ProductManager {
 
 }
 
-module.exports=ProductManager
-
+module.exports = ProductManager;

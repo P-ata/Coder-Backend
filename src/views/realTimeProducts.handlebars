@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Real-Time Products</title>
+    <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
     <h1>Real-Time Products</h1>
-    <ul>
+    <ul id="productList">
         {{#each products}}
-            <li>{{this.title}} - {{this.price}}</li>
+            <li data-id="{{this._id}}">{{this.title}} - {{this.price}}</li>
         {{/each}}
     </ul>
     
@@ -24,16 +25,43 @@
     </form>
 
     <script>
-        const form = document.getElementById('addProductForm');
-        form.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            const formData = new FormData(form);
-            const title = formData.get('title');
-            const price = formData.get('price');
-            // Agrega lógica para obtener otros campos del formulario
-            const newProduct = { title, price };
-            socket.emit('addProduct', newProduct);
-            form.reset();
+        document.addEventListener('DOMContentLoaded', () => {
+            const socket = io();
+            
+            socket.on('productAdded', (newProduct) => {
+                const productList = document.getElementById('productList');
+                const listItem = document.createElement('li');
+                listItem.textContent = `${newProduct.title} - ${newProduct.price}`;
+                productList.appendChild(listItem);
+            });
+
+            socket.on('productUpdated', (updatedProduct) => {
+                const productList = document.getElementById('productList');
+                const listItem = [...productList.children].find(item => item.dataset.id === updatedProduct._id);
+                if (listItem) {
+                    listItem.textContent = `${updatedProduct.title} - ${updatedProduct.price}`;
+                }
+            });
+
+            socket.on('productDeleted', (deletedProduct) => {
+                const productList = document.getElementById('productList');
+                const listItem = [...productList.children].find(item => item.dataset.id === deletedProduct._id);
+                if (listItem) {
+                    productList.removeChild(listItem);
+                }
+            });
+
+            const form = document.getElementById('addProductForm');
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                const formData = new FormData(form);
+                const title = formData.get('title');
+                const price = formData.get('price');
+                // Agrega lógica para obtener otros campos del formulario
+                const newProduct = { title, price };
+                socket.emit('addProduct', newProduct);
+                form.reset();
+            });
         });
     </script>
 </body>

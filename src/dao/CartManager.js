@@ -1,5 +1,5 @@
-import mongoose from "mongoose";
-import CartModel from "./models/CartModel";
+const mongoose = require('mongoose');
+const CartModel = require('./models/CartModel');
 
 class CartManager {
 
@@ -39,8 +39,6 @@ class CartManager {
         return product;
     }
     
-      
 }
 
 module.exports = CartManager;
-
