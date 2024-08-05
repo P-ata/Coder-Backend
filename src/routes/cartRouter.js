@@ -1,65 +1,90 @@
-const { Router } = require('express');
-const mongoose = require('mongoose');
+const express = require('express');
 const CartManager = require('../dao/CartManager');
-const { getIO } = require('../io');  // Importar getIO
-
-const router = Router();
+const cartRouter = express.Router();
 const cartManagerInstance = new CartManager();
 
-router.get("/", async (req, res) => {
+
+cartRouter.get('/', async (req, res) => {
     try {
         const carts = await cartManagerInstance.getAllCarts();
-        res.status(200).json(carts);
+        res.render('carts', { carts });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        res.status(500).send({ status: 'error', message: error.message });
     }
 });
 
-router.get("/:cid", async (req, res) => {
+
+cartRouter.get('/:cid', async (req, res) => {
+    const { cid } = req.params;
     try {
-        const cartId = req.params.cid;
-        const products = await cartManagerInstance.getProductsInCart(cartId);
-        res.json(products);
+        const cart = await cartManagerInstance.getCartWithProducts(cid);
+        res.render('cart', { cartId: cid, products: cart.products });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        res.status(500).send({ status: 'error', message: error.message });
     }
 });
 
-router.post("/", async (req, res) => {
+
+cartRouter.post('/add', async (req, res) => {
+    const { cartId, productId, quantity } = req.body;
+    if (!cartId || !productId || !quantity) {
+        return res.status(400).send({ status: 'error', message: 'Missing parameters' });
+    }
     try {
-        const newCart = await cartManagerInstance.createCart();
-        console.log(`Se creó el carrito con ID: ${newCart._id}`);
-        getIO().emit("cartCreated", newCart); // Usa getIO().emit si es necesario
-        res.status(201).json(newCart);
+        await cartManagerInstance.addProductToCart(cartId, productId, quantity);
+        res.status(200).send({ status: 'success', message: 'Product added to cart' });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        res.status(500).send({ status: 'error', message: error.message });
     }
 });
 
-router.post("/:cid/product/:pid", async (req, res) => {
+
+cartRouter.put('/:cid/products/:pid', async (req, res) => {
+    const { cid, pid } = req.params;
+    const { quantity } = req.body;
+    if (!quantity || typeof quantity !== 'number' || quantity < 1) {
+        return res.status(400).send({ status: 'error', message: 'Invalid quantity' });
+    }
     try {
-        const { cid, pid } = req.params;
-        const { quantity } = req.body;
-
-        if (!mongoose.Types.ObjectId.isValid(cid) || !mongoose.Types.ObjectId.isValid(pid)) {
-            throw new Error("Los ID del carrito y del producto deben ser válidos");
-        }
-
-        const cart = await cartManagerInstance.getCartById(cid);
-        if (!cart) {
-            throw new Error("Carrito no encontrado");
-        }
-
-        if (!Number.isInteger(quantity) || quantity <= 0) {
-            throw new Error("La cantidad del producto debe ser un número entero positivo");
-        }
-
-        await cartManagerInstance.addProductToCart(cid, pid, quantity);
-        getIO().emit("productAddedToCart", { cartId: cid, productId: pid, quantity }); // Usa getIO().emit si es necesario
-        res.status(200).json(cart);
+        await cartManagerInstance.updateProductQuantity(cid, pid, quantity);
+        res.status(200).send({ status: 'success', message: 'Product quantity updated' });
     } catch (error) {
-        res.status(400).json({ error: error.message });
+        console.error("Error al actualizar la cantidad del producto:", error);
+        res.status(500).send({ status: 'error', message: error.message });
     }
 });
 
-module.exports = router;
+
+cartRouter.delete('/:cid/products/:pid', async (req, res) => {
+    const { cid, pid } = req.params;
+    try {
+        await cartManagerInstance.removeProductFromCart(cid, pid);
+        res.status(200).send({ status: 'success', message: 'Product removed from cart' });
+    } catch (error) {
+        res.status(500).send({ status: 'error', message: error.message });
+    }
+});
+
+
+cartRouter.delete('/:cid/products', async (req, res) => {
+    const { cid } = req.params;
+    try {
+        await cartManagerInstance.removeAllProductsFromCart(cid);
+        res.status(200).send({ status: 'success', message: 'All products removed from cart' });
+    } catch (error) {
+        res.status(500).send({ status: 'error', message: error.message });
+    }
+});
+
+
+cartRouter.delete('/:cid', async (req, res) => {
+    const { cid } = req.params;
+    try {
+        await cartManagerInstance.deleteCart(cid);
+        res.status(200).send({ status: 'success', message: 'Cart deleted' });
+    } catch (error) {
+        res.status(500).send({ status: 'error', message: error.message });
+    }
+});
+
+module.exports = cartRouter;

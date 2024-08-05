@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Carts</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        function deleteCart(cartId) {
+            fetch(`/api/carts/${cartId}`, {
+                method: 'DELETE',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Cart deleted successfully');
+                    window.location.reload(); 
+                } else {
+                    alert('Error deleting cart');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        function modifyProduct(cartId, productId) {
+            const quantity = document.getElementById(`quantity-${cartId}-${productId}`).value;
+            fetch(`/api/carts/${cartId}/products/${productId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ quantity: parseInt(quantity, 10) })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Product quantity updated');
+                    window.location.reload(); 
+                } else {
+                    alert('Error updating product quantity');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        function deleteProduct(cartId, productId) {
+            fetch(`/api/carts/${cartId}/products/${productId}`, {
+                method: 'DELETE',
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Product deleted successfully');
+                    window.location.reload(); 
+                } else {
+                    alert('Error deleting product');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        socket.on('cartDeleted', (cartId) => {
+            const cartElement = document.getElementById(`cart-${cartId}`);
+            if (cartElement) {
+                cartElement.remove();
+            }
+        });
+    </script>
+</head>
+<body>
+    <h1>All Carts</h1>
+    <ul>
+        {{#each carts}}
+            <li id="cart-{{this._id}}">
+                <h2>{{this.name}}</h2>
+                <p>ID: {{this._id}}</p>
+                <button onclick="deleteCart('{{this._id}}')">Delete Cart</button>
+                <ul>
+                    {{#each this.products}}
+                        <li>
+                            <p>Product: {{this.name}}</p>
+                            <p>Category: {{this.category}}</p>
+                            <p>Quantity: 
+                                <input type="number" id="quantity-{{../_id}}-{{this.product._id}}" value="{{this.quantity}}" min="1">
+                                <button onclick="modifyProduct('{{../_id}}', '{{this.product._id}}')">Modify</button>
+                                <button onclick="deleteProduct('{{../_id}}', '{{this.product._id}}')">Delete</button>
+                            </p>
+                        </li>
+                    {{/each}}
+                </ul>
+            </li>
+        {{/each}}
+    </ul>
+</body>
+</html>

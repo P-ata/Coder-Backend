@@ -37,11 +37,28 @@ router.get("/", async (req, res) => {
             page: parseInt(page, 10),
             hasPrevPage,
             hasNextPage,
-            prevLink: hasPrevPage ? `/realtimeproducts?page=${prevPage}&limit=${limit}${sort ? `&sort=${sort}` : ''}${query ? `&query=${query}` : ''}${stockRange ? `&stockRange=${stockRange}` : ''}` : null,
-            nextLink: hasNextPage ? `/realtimeproducts?page=${nextPage}&limit=${limit}${sort ? `&sort=${sort}` : ''}${query ? `&query=${query}` : ''}${stockRange ? `&stockRange=${stockRange}` : ''}` : null
+            prevLink: hasPrevPage ? `/api/realtimeproducts?page=${prevPage}&limit=${limit}${sort ? `&sort=${sort}` : ''}${query ? `&query=${query}` : ''}${stockRange ? `&stockRange=${stockRange}` : ''}` : null,
+            nextLink: hasNextPage ? `/api/realtimeproducts?page=${nextPage}&limit=${limit}${sort ? `&sort=${sort}` : ''}${query ? `&query=${query}` : ''}${stockRange ? `&stockRange=${stockRange}` : ''}` : null
         });
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+});
+
+router.post("/edit", async (req, res) => {
+    try {
+        const { productId, title, description, price, category, stock, image } = req.body;
+        const updatedProduct = await ProductsModel.findByIdAndUpdate(productId, {
+            title, description, price, category, stock, image
+        }, { new: true });
+        if (updatedProduct) {
+            req.io.emit('productUpdated', updatedProduct);
+            res.status(200).json({ status: 'success', message: 'Product updated', product: updatedProduct });
+        } else {
+            res.status(404).json({ status: 'error', message: 'Product not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ status: 'error', message: error.message });
     }
 });
 

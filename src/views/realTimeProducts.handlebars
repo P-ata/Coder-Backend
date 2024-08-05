@@ -14,9 +14,9 @@
             const stockRange = document.getElementById('stock-range').value;
             const sort = document.getElementById('sort-order').value;
             const limit = 5;
-            const page = 1; // Reset to the first page
+            const page = 1; 
 
-            let url = `/realtimeproducts?page=${page}&limit=${limit}`;
+            let url = `/api/realtimeproducts?page=${page}&limit=${limit}`;
             if (query) url += `&query=${query}`;
             if (stockRange) url += `&stockRange=${stockRange}`;
             if (sort) url += `&sort=${sort}`;
@@ -40,6 +40,47 @@
                 document.getElementById('sort-order').value = sort;
             }
         });
+
+        function openEditForm(productId) {
+            const productElement = document.querySelector(`li[data-id="${productId}"]`);
+            const editForm = document.getElementById('edit-form-template').content.cloneNode(true);
+
+            editForm.querySelector('.edit-form').dataset.id = productId;
+            editForm.querySelector('.edit-id').value = productId;
+            editForm.querySelector('.edit-title').value = productElement.querySelector('.product-title').textContent;
+            editForm.querySelector('.edit-description').value = productElement.querySelector('.product-description').textContent;
+            editForm.querySelector('.edit-price').value = parseFloat(productElement.querySelector('.product-price').textContent.replace('Price: $', ''));
+            editForm.querySelector('.edit-category').value = productElement.querySelector('.product-category').textContent.replace('Category: ', '');
+            editForm.querySelector('.edit-stock').value = productElement.querySelector('.product-stock').textContent.replace('Stock: ', '');
+            editForm.querySelector('.edit-image').value = productElement.querySelector('img').src;
+
+            const existingForm = productElement.querySelector('.edit-form');
+            if (existingForm) {
+                existingForm.remove();
+            }
+            productElement.appendChild(editForm);
+        }
+
+        function closeEditForm(event) {
+            const form = event.target.closest('.edit-form');
+            if (form) {
+                form.remove();
+            }
+        }
+
+        function editProduct(event) {
+            event.preventDefault();
+            const form = event.target;
+            const productId = form.querySelector('.edit-id').value;
+            const title = form.querySelector('.edit-title').value;
+            const description = form.querySelector('.edit-description').value;
+            const price = parseFloat(form.querySelector('.edit-price').value);
+            const category = form.querySelector('.edit-category').value;
+            const stock = form.querySelector('.edit-stock').value;
+            const image = form.querySelector('.edit-image').value;
+
+            socket.emit('editProduct', { productId, title, description, price, category, stock, image });
+        }
 
         socket.on('productAdded', (product) => {
             addCategoryOption(product.category);
@@ -65,11 +106,27 @@
             updateCategories(categories);
         });
 
+        socket.on('productUpdated', (updatedProduct) => {
+            const productElement = document.querySelector(`li[data-id="${updatedProduct._id}"]`);
+            productElement.querySelector('.product-title').textContent = updatedProduct.title;
+            productElement.querySelector('.product-description').textContent = updatedProduct.description;
+            productElement.querySelector('.product-price').textContent = `Price: $${updatedProduct.price.toFixed(2)}`;
+            productElement.querySelector('.product-category').textContent = `Category: ${updatedProduct.category}`;
+            productElement.querySelector('.product-stock').textContent = `Stock: ${updatedProduct.stock}`;
+            productElement.querySelector('img').src = updatedProduct.image;
+
+            // Remove edit form after saving changes
+            const editForm = productElement.querySelector('.edit-form');
+            if (editForm) {
+                editForm.remove();
+            }
+        });
+
         function addProduct(event) {
             event.preventDefault();
             const title = document.getElementById('title').value;
             const description = document.getElementById('description').value;
-            const price = document.getElementById('price').value;
+            const price = parseFloat(document.getElementById('price').value);
             const category = document.getElementById('category').value;
             const image = document.getElementById('image').value;
             const stock = document.getElementById('stock').value;
@@ -132,7 +189,7 @@
     <form onsubmit="addProduct(event)">
         <input type="text" id="title" placeholder="Title" required>
         <input type="text" id="description" placeholder="Description" required>
-        <input type="number" id="price" placeholder="Price" required>
+        <input type="number" step="0.01" id="price" placeholder="Price" required>
         <input type="text" id="category" placeholder="Category" required>
         <input type="text" id="image" placeholder="Image URL" required>
         <input type="number" id="stock" placeholder="Stock" required>
@@ -167,24 +224,48 @@
         <button onclick="applyFilters()">Apply Filters</button>
     </div>
 
+    <div id="pagination-top" class="pagination">
+        <button onclick="window.location.href='{{prevLink}}'" {{#unless hasPrevPage}}disabled{{/unless}}>Prev</button>
+        <span>Page {{page}} of {{totalPages}}</span>
+        <button onclick="window.location.href='{{nextLink}}'" {{#unless hasNextPage}}disabled{{/unless}}>Next</button>
+    </div>
+
     <ul id="product-list">
         {{#each products}}
             <li data-id="{{this._id}}">
-                <h2>{{this.title}}</h2>
+                <h2 class="product-title">{{this.title}}</h2>
                 <img src="{{this.image}}" alt="{{this.title}}" width="100" height="100">
-                <p>{{this.description}}</p>
-                <p>Price: ${{this.price}}</p>
-                <p>Category: {{this.category}}</p>
-                <p>Stock: {{this.stock}}</p>
+                <p class="product-description">{{this.description}}</p>
+                <p class="product-price">Price: ${{this.price}}</p>
+                <p class="product-category">Category: {{this.category}}</p>
+                <p class="product-stock">Stock: {{this.stock}}</p>
                 <button onclick="deleteProduct('{{this._id}}')">Delete</button>
+                <button onclick="openEditForm('{{this._id}}')">Edit</button>
             </li>
         {{/each}}
     </ul>
 
-    <div id="pagination" class="pagination">
+    <template id="edit-form-template">
+        <div class="edit-form">
+            <form onsubmit="editProduct(event)">
+                <input type="hidden" class="edit-id">
+                <input type="text" class="edit-title" placeholder="Title" required>
+                <input type="text" class="edit-description" placeholder="Description" required>
+                <input type="number" step="0.01" class="edit-price" placeholder="Price" required>
+                <input type="text" class="edit-category" placeholder="Category" required>
+                <input type="text" class="edit-image" placeholder="Image URL" required>
+                <input type="number" class="edit-stock" placeholder="Stock" required>
+                <button type="submit">Save Changes</button>
+                <button type="button" onclick="closeEditForm(event)">Cancel</button>
+            </form>
+        </div>
+    </template>
+    
+    <div id="pagination-bottom" class="pagination">
         <button onclick="window.location.href='{{prevLink}}'" {{#unless hasPrevPage}}disabled{{/unless}}>Prev</button>
         <span>Page {{page}} of {{totalPages}}</span>
         <button onclick="window.location.href='{{nextLink}}'" {{#unless hasNextPage}}disabled{{/unless}}>Next</button>
     </div>
 </body>
 </html>
+ 

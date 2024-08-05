@@ -97,17 +97,34 @@ li img {
     margin-bottom: 10px;
 }
 
-li button {
-    background-color: #dc3545;
+li .cart-select {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+li .cart-select:hover {
+    background-color: #e9ecef;
+}
+
+li .add-to-cart-btn {
+    background-color: #28a745;
     color: #fff;
     border: none;
     border-radius: 4px;
     padding: 10px;
     cursor: pointer;
+    display: block;
+    width: 100%;
+    margin-top: 10px;
 }
 
-li button:hover {
-    background-color: #c82333;
+li .add-to-cart-btn:hover {
+    background-color: #218838;
 }
 
 .pagination {
@@ -133,4 +150,32 @@ li button:hover {
 
 .pagination button:hover:not(:disabled) {
     background-color: #0056b3;
+}
+
+ul#cart-list {
+    list-style-type: none;
+    padding: 0;
+}
+
+ul#cart-list li {
+    background-color: white;
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+ul#cart-list li h2 {
+    margin: 0 0 10px 0;
+}
+
+ul#cart-list li p {
+    margin: 5px 0;
+}
+
+ul#cart-list li input[type="number"] {
+    width: 50px;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
 }

@@ -1,6 +1,7 @@
 const express = require('express');
-const router = express.Router();
 const ProductsModel = require("../dao/models/ProductsModel");
+
+const router = express.Router();
 
 router.get("/", async (req, res) => {
     try {
@@ -37,8 +38,8 @@ router.get("/", async (req, res) => {
             page: parseInt(page, 10),
             hasPrevPage,
             hasNextPage,
-            prevLink: hasPrevPage ? `/products?page=${prevPage}&limit=${limit}${sort ? `&sort=${sort}` : ''}${query ? `&query=${query}` : ''}${stockRange ? `&stockRange=${stockRange}` : ''}` : null,
-            nextLink: hasNextPage ? `/products?page=${nextPage}&limit=${limit}${sort ? `&sort=${sort}` : ''}${query ? `&query=${query}` : ''}${stockRange ? `&stockRange=${stockRange}` : ''}` : null
+            prevLink: hasPrevPage ? `/api/products?page=${prevPage}&limit=${limit}${sort ? `&sort=${sort}` : ''}${query ? `&query=${query}` : ''}${stockRange ? `&stockRange=${stockRange}` : ''}` : null,
+            nextLink: hasNextPage ? `/api/products?page=${nextPage}&limit=${limit}${sort ? `&sort=${sort}` : ''}${query ? `&query=${query}` : ''}${stockRange ? `&stockRange=${stockRange}` : ''}` : null
         });
     } catch (error) {
         res.status(500).json({ error: error.message });

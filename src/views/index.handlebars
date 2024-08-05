@@ -5,10 +5,119 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Products</title>
     <link rel="stylesheet" href="/css/styles.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-cookie@2/src/js.cookie.min.js"></script>
+    <script>
+        const socket = io();
+
+        function applyFilters() {
+            const query = document.getElementById('filter-query').value;
+            const stockRange = document.getElementById('stock-range').value;
+            const sort = document.getElementById('sort-order').value;
+            const limit = 5;
+            const page = 1; 
+
+            let url = `/api/products?page=${page}&limit=${limit}`;
+            if (query) url += `&query=${query}`;
+            if (stockRange) url += `&stockRange=${stockRange}`;
+            if (sort) url += `&sort=${sort}`;
+
+            window.location.href = url;
+        }
+
+        function createCart(event) {
+            event.preventDefault();
+            const cartName = document.getElementById('cart-name').value;
+            socket.emit('createCart', { name: cartName });
+        }
+
+        socket.on('cartCreated', (cart) => {
+            const cartSelects = document.querySelectorAll('.cart-select');
+            cartSelects.forEach(select => {
+                const option = document.createElement('option');
+                option.value = cart._id;
+                option.textContent = cart.name;
+                select.appendChild(option);
+            });
+            alert('Cart created successfully');
+        });
+
+        function addToCart(productId, cartSelectId, quantityInputId) {
+            const cartId = document.getElementById(cartSelectId).value;
+            const quantity = parseInt(document.getElementById(quantityInputId).value, 10);
+            if (!cartId) {
+                alert('Please select a cart');
+                return;
+            }
+            if (isNaN(quantity) || quantity <= 0) {
+                alert('Please enter a valid quantity');
+                return;
+            }
+            console.log(`Adding product to cart ${cartId}, product ${productId}, quantity ${quantity}`);
+            fetch(`/api/carts/add`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ cartId, productId, quantity })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('Product added to cart');
+                } else {
+                    alert('Error adding product to cart');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const params = new URLSearchParams(window.location.search);
+            const query = params.get('query');
+            const stockRange = params.get('stockRange');
+            const sort = params.get('sort');
+
+            if (query) {
+                document.getElementById('filter-query').value = query;
+            }
+            if (stockRange) {
+                document.getElementById('stock-range').value = stockRange;
+            }
+            if (sort) {
+                document.getElementById('sort-order').value = sort;
+            }
+
+            
+            fetch('/api/carts')
+                .then(response => response.json())
+                .then(carts => {
+                    const cartSelects = document.querySelectorAll('.cart-select');
+                    carts.forEach(cart => {
+                        cartSelects.forEach(select => {
+                            const option = document.createElement('option');
+                            option.value = cart._id;
+                            option.textContent = cart.name;
+                            select.appendChild(option);
+                        });
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching carts:', error);
+                });
+        });
+    </script>
 </head>
 <body>
     <h1>Product List</h1>
-    
+
+    <form onsubmit="createCart(event)">
+        <input type="text" id="cart-name" placeholder="Cart Name" required>
+        <button type="submit">Create Cart</button>
+    </form>
+
     <div class="filters">
         <select id="filter-query">
             <option value="">All Categories</option>
@@ -37,6 +146,12 @@
         <button onclick="applyFilters()">Apply Filters</button>
     </div>
 
+    <div id="pagination-top" class="pagination">
+        <button onclick="window.location.href='{{prevLink}}'" {{#unless hasPrevPage}}disabled{{/unless}}>Prev</button>
+        <span>Page {{page}} of {{totalPages}}</span>
+        <button onclick="window.location.href='{{nextLink}}'" {{#unless hasNextPage}}disabled{{/unless}}>Next</button>
+    </div>
+
     <ul>
         {{#each products}}
             <li>
@@ -44,48 +159,22 @@
                 <img src="{{this.image}}" alt="{{this.title}}" width="100" height="100">
                 <p>{{this.description}}</p>
                 <p>Price: ${{this.price}}</p>
+                <div>
+                    <label for="cart-select-{{this._id}}">Select Cart:</label>
+                    <select id="cart-select-{{this._id}}" class="cart-select">
+                        <option value="" disabled selected>Select a cart</option>
+                    </select>
+                    <input type="number" id="quantity-{{this._id}}" min="1" placeholder="Quantity">
+                </div>
+                <button class="add-to-cart-btn" onclick="addToCart('{{this._id}}', 'cart-select-{{this._id}}', 'quantity-{{this._id}}')">Add to Cart</button>
             </li>
         {{/each}}
     </ul>
 
-    <div id="pagination" class="pagination">
+    <div id="pagination-bottom" class="pagination">
         <button onclick="window.location.href='{{prevLink}}'" {{#unless hasPrevPage}}disabled{{/unless}}>Prev</button>
         <span>Page {{page}} of {{totalPages}}</span>
         <button onclick="window.location.href='{{nextLink}}'" {{#unless hasNextPage}}disabled{{/unless}}>Next</button>
     </div>
-
-    <script>
-        function applyFilters() {
-            const query = document.getElementById('filter-query').value;
-            const stockRange = document.getElementById('stock-range').value;
-            const sort = document.getElementById('sort-order').value;
-            const limit = 5;
-            const page = 1; // Reset to the first page
-
-            let url = `/products?page=${page}&limit=${limit}`;
-            if (query) url += `&query=${query}`;
-            if (stockRange) url += `&stockRange=${stockRange}`;
-            if (sort) url += `&sort=${sort}`;
-
-            window.location.href = url;
-        }
-
-        document.addEventListener('DOMContentLoaded', (event) => {
-            const params = new URLSearchParams(window.location.search);
-            const query = params.get('query');
-            const stockRange = params.get('stockRange');
-            const sort = params.get('sort');
-
-            if (query) {
-                document.getElementById('filter-query').value = query;
-            }
-            if (stockRange) {
-                document.getElementById('stock-range').value = stockRange;
-            }
-            if (sort) {
-                document.getElementById('sort-order').value = sort;
-            }
-        });
-    </script>
 </body>
 </html>

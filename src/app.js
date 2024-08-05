@@ -68,8 +68,8 @@ app.engine("handlebars", engine({
 app.set("view engine", "handlebars");
 app.set("views", "./src/views");
 
-app.use("/products", productRouter);
-app.use("/realtimeproducts", realTimeProductsRouter);
+app.use("/api/products", productRouter);
+app.use("/api/realtimeproducts", realTimeProductsRouter);
 app.use("/api/carts", cartRouter);
 
 app.get('/', (req, res) => {
@@ -77,7 +77,7 @@ app.get('/', (req, res) => {
     res.status(200).send('OK');
 });
 
-// Agrega un manejador de errores 404
+
 app.use((req, res, next) => {
     res.status(404).send("File not found");
 });
