@@ -4,16 +4,187 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Real-Time Products</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+
+        function applyFilters() {
+            const query = document.getElementById('filter-query').value;
+            const stockRange = document.getElementById('stock-range').value;
+            const sort = document.getElementById('sort-order').value;
+            const limit = 5;
+            const page = 1; // Reset to the first page
+
+            let url = `/realtimeproducts?page=${page}&limit=${limit}`;
+            if (query) url += `&query=${query}`;
+            if (stockRange) url += `&stockRange=${stockRange}`;
+            if (sort) url += `&sort=${sort}`;
+
+            window.location.href = url;
+        }
+
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const params = new URLSearchParams(window.location.search);
+            const query = params.get('query');
+            const stockRange = params.get('stockRange');
+            const sort = params.get('sort');
+
+            if (query) {
+                document.getElementById('filter-query').value = query;
+            }
+            if (stockRange) {
+                document.getElementById('stock-range').value = stockRange;
+            }
+            if (sort) {
+                document.getElementById('sort-order').value = sort;
+            }
+        });
+
+        socket.on('productAdded', (product) => {
+            addCategoryOption(product.category);
+            window.location.reload();
+        });
+
+        socket.on('productDeleted', (productId, category) => {
+            removeCategoryOption(category);
+            window.location.reload();
+        });
+
+        socket.on('categoryEmpty', (category) => {
+            const filterQuery = document.getElementById('filter-query');
+            if (filterQuery.value === category) {
+                filterQuery.value = '';
+                setTimeout(() => {
+                    applyFilters();
+                }, 100);
+            }
+        });
+
+        socket.on('categoriesUpdated', (categories) => {
+            updateCategories(categories);
+        });
+
+        function addProduct(event) {
+            event.preventDefault();
+            const title = document.getElementById('title').value;
+            const description = document.getElementById('description').value;
+            const price = document.getElementById('price').value;
+            const category = document.getElementById('category').value;
+            const image = document.getElementById('image').value;
+            const stock = document.getElementById('stock').value;
+
+            const id = generateUniqueId();
+
+            socket.emit('addProduct', { id, title, description, price, category, image, stock });
+
+            // Clear form fields after submission
+            document.getElementById('title').value = '';
+            document.getElementById('description').value = '';
+            document.getElementById('price').value = '';
+            document.getElementById('category').value = '';
+            document.getElementById('image').value = '';
+            document.getElementById('stock').value = '';
+        }
+
+        function deleteProduct(productId) {
+            socket.emit('deleteProduct', productId);
+        }
+
+        function addCategoryOption(category) {
+            const filterQuery = document.getElementById('filter-query');
+            if (!Array.from(filterQuery.options).some(option => option.value === category)) {
+                const newOption = document.createElement('option');
+                newOption.value = category;
+                newOption.textContent = category;
+                filterQuery.appendChild(newOption);
+            }
+        }
+
+        function removeCategoryOption(category) {
+            const filterQuery = document.getElementById('filter-query');
+            const options = Array.from(filterQuery.options);
+            const optionToRemove = options.find(option => option.value === category);
+            if (optionToRemove) {
+                filterQuery.removeChild(optionToRemove);
+            }
+        }
+
+        function updateCategories(categories) {
+            const filterQuery = document.getElementById('filter-query');
+            filterQuery.innerHTML = '<option value="">All Categories</option>';
+            categories.forEach(category => {
+                const newOption = document.createElement('option');
+                newOption.value = category;
+                newOption.textContent = category;
+                filterQuery.appendChild(newOption);
+            });
+        }
+
+        function generateUniqueId() {
+            return '_' + Math.random().toString(36).substr(2, 9);
+        }
+    </script>
 </head>
 <body>
-    <h1>Real-Time Products</h1>
-    <ul id="productList">
+    <h1>Real-Time Product List</h1>
+
+    <form onsubmit="addProduct(event)">
+        <input type="text" id="title" placeholder="Title" required>
+        <input type="text" id="description" placeholder="Description" required>
+        <input type="number" id="price" placeholder="Price" required>
+        <input type="text" id="category" placeholder="Category" required>
+        <input type="text" id="image" placeholder="Image URL" required>
+        <input type="number" id="stock" placeholder="Stock" required>
+        <button type="submit">Add Product</button>
+    </form>
+
+    <div class="filters">
+        <select id="filter-query">
+            <option value="">All Categories</option>
+            {{#each categories}}
+                <option value="{{this}}">{{this}}</option>
+            {{/each}}
+        </select>
+        <select id="stock-range">
+            <option value="">All Stock Ranges</option>
+            <option value="0-10">0-10</option>
+            <option value="11-20">11-20</option>
+            <option value="21-30">21-30</option>
+            <option value="31-40">31-40</option>
+            <option value="41-50">41-50</option>
+            <option value="51-60">51-60</option>
+            <option value="61-70">61-70</option>
+            <option value="71-80">71-80</option>
+            <option value="81-90">81-90</option>
+            <option value="91-100">91-100</option>
+        </select>
+        <select id="sort-order">
+            <option value="">Sort by price</option>
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+        </select>
+        <button onclick="applyFilters()">Apply Filters</button>
+    </div>
+
+    <ul id="product-list">
         {{#each products}}
             <li data-id="{{this._id}}">
+                <h2>{{this.title}}</h2>
                 <img src="{{this.image}}" alt="{{this.title}}" width="100" height="100">
-                {{this.title}} - {{this.price}}
+                <p>{{this.description}}</p>
+                <p>Price: ${{this.price}}</p>
+                <p>Category: {{this.category}}</p>
+                <p>Stock: {{this.stock}}</p>
+                <button onclick="deleteProduct('{{this._id}}')">Delete</button>
             </li>
         {{/each}}
     </ul>
+
+    <div id="pagination" class="pagination">
+        <button onclick="window.location.href='{{prevLink}}'" {{#unless hasPrevPage}}disabled{{/unless}}>Prev</button>
+        <span>Page {{page}} of {{totalPages}}</span>
+        <button onclick="window.location.href='{{nextLink}}'" {{#unless hasNextPage}}disabled{{/unless}}>Next</button>
+    </div>
 </body>
 </html>

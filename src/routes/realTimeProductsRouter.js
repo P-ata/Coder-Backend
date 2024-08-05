@@ -28,7 +28,7 @@ router.get("/", async (req, res) => {
 
         const { docs, totalPages, hasNextPage, hasPrevPage, nextPage, prevPage } = result;
 
-        res.render("index", {
+        res.render("realTimeProducts", {
             products: docs,
             categories,
             totalPages,
@@ -37,8 +37,8 @@ router.get("/", async (req, res) => {
             page: parseInt(page, 10),
             hasPrevPage,
             hasNextPage,
-            prevLink: hasPrevPage ? `/products?page=${prevPage}&limit=${limit}${sort ? `&sort=${sort}` : ''}${query ? `&query=${query}` : ''}${stockRange ? `&stockRange=${stockRange}` : ''}` : null,
-            nextLink: hasNextPage ? `/products?page=${nextPage}&limit=${limit}${sort ? `&sort=${sort}` : ''}${query ? `&query=${query}` : ''}${stockRange ? `&stockRange=${stockRange}` : ''}` : null
+            prevLink: hasPrevPage ? `/realtimeproducts?page=${prevPage}&limit=${limit}${sort ? `&sort=${sort}` : ''}${query ? `&query=${query}` : ''}${stockRange ? `&stockRange=${stockRange}` : ''}` : null,
+            nextLink: hasNextPage ? `/realtimeproducts?page=${nextPage}&limit=${limit}${sort ? `&sort=${sort}` : ''}${query ? `&query=${query}` : ''}${stockRange ? `&stockRange=${stockRange}` : ''}` : null
         });
     } catch (error) {
         res.status(500).json({ error: error.message });

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Products</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <h1>Product List</h1>
+    
+    <div class="filters">
+        <select id="filter-query">
+            <option value="">All Categories</option>
+            {{#each categories}}
+                <option value="{{this}}">{{this}}</option>
+            {{/each}}
+        </select>
+        <select id="stock-range">
+            <option value="">All Stock Ranges</option>
+            <option value="0-10">0-10</option>
+            <option value="11-20">11-20</option>
+            <option value="21-30">21-30</option>
+            <option value="31-40">31-40</option>
+            <option value="41-50">41-50</option>
+            <option value="51-60">51-60</option>
+            <option value="61-70">61-70</option>
+            <option value="71-80">71-80</option>
+            <option value="81-90">81-90</option>
+            <option value="91-100">91-100</option>
+        </select>
+        <select id="sort-order">
+            <option value="">Sort by price</option>
+            <option value="asc">Ascending</option>
+            <option value="desc">Descending</option>
+        </select>
+        <button onclick="applyFilters()">Apply Filters</button>
+    </div>
+
+    <ul>
+        {{#each products}}
+            <li>
+                <h2>{{this.title}}</h2>
+                <img src="{{this.image}}" alt="{{this.title}}" width="100" height="100">
+                <p>{{this.description}}</p>
+                <p>Price: ${{this.price}}</p>
+            </li>
+        {{/each}}
+    </ul>
+
+    <div id="pagination" class="pagination">
+        <button onclick="window.location.href='{{prevLink}}'" {{#unless hasPrevPage}}disabled{{/unless}}>Prev</button>
+        <span>Page {{page}} of {{totalPages}}</span>
+        <button onclick="window.location.href='{{nextLink}}'" {{#unless hasNextPage}}disabled{{/unless}}>Next</button>
+    </div>
+
+    <script>
+        function applyFilters() {
+            const query = document.getElementById('filter-query').value;
+            const stockRange = document.getElementById('stock-range').value;
+            const sort = document.getElementById('sort-order').value;
+            const limit = 5;
+            const page = 1; // Reset to the first page
+
+            let url = `/products?page=${page}&limit=${limit}`;
+            if (query) url += `&query=${query}`;
+            if (stockRange) url += `&stockRange=${stockRange}`;
+            if (sort) url += `&sort=${sort}`;
+
+            window.location.href = url;
+        }
+
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const params = new URLSearchParams(window.location.search);
+            const query = params.get('query');
+            const stockRange = params.get('stockRange');
+            const sort = params.get('sort');
+
+            if (query) {
+                document.getElementById('filter-query').value = query;
+            }
+            if (stockRange) {
+                document.getElementById('stock-range').value = stockRange;
+            }
+            if (sort) {
+                document.getElementById('sort-order').value = sort;
+            }
+        });
+    </script>
+</body>
+</html>
